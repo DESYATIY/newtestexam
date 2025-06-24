@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Тестове застосунок з підсвіткою та навігацією</title>
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #app {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px;
+    }
+    .question {
+      font-size: 22px;
+      margin-bottom: 15px;
+    }
+    .answers button {
+      display: block;
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      background-color: #333;
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      border-radius: 5px;
+      font-size: 18px;
+      transition: background-color 0.3s;
+    }
+    .answers button:hover:not(:disabled) {
+      background-color: #555;
+    }
+    .answers button.correct {
+      background-color: #28a745 !important;
+    }
+    .answers button.wrong {
+      background-color: #dc3545 !important;
+    }
+    .answers button.selected {
+      outline: 2px solid #00ffff;
+    }
+    .answers button:disabled {
+      cursor: default;
+      opacity: 0.8;
+    }
+    .stats {
+      margin-top: 15px;
+      font-size: 16px;
+    }
+    .navigation {
+      margin-top: 15px;
+      display: flex;
+      justify-content: flex-start;
+    }
+    .navigation button {
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      background-color: #444;
+      color: white;
+      margin-right: 10px;
+    }
+    .navigation button:disabled {
+      background-color: #222;
+      cursor: default;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    // 🔹 Пример — заменишь на свои вопросы
+    const questions = [
+  {
+    "question": "Виражена психомоторна загальмованість характерна для депресії:",
+    "options": [
+      "Сльозливої",
+      "Іронічно",
+      "Ендогенної",
+      "Деперсоналізаційної"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Відокремте, серед наведених нижче, складні варіанти депресивного синдрому:",
+    "options": [
+      "Депресія з тривогою",
+      "Депресія з обсесіями",
+      "Депресія з дисфорією",
+      "Депресія з ажитацією"
+    ],
+    "correct_index": 1
+  },
+  {
+    "question": "Яка з відзнак не притаманна обсесивному синдрому:",
+    "options": [
+      "\"Чужерідність\" нав'язливих думок",
+      "Некритичне ставлення хворого",
+      "\"Захисні ритуали\"",
+      "Виникнення всупереч бажанню хворого"
+    ],
+    "correct_index": 1
+  },
+  {
+    "question": "Вкажіть, з якою метою здійснюють ритуали хворі з фобіями:",
+    "options": [
+      "Відвернення уваги від власних переживань",
+      "Без будь-якої мети",
+      "З метою захисту від якого-небудь нещастя",
+      "З метою протидії болісним переживанням"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "При якому захворюванні деперсоналізація і дереалізація виникають у вигляді короткотривалих нападів?",
+    "options": [
+      "Безперервно-прогредієнтна шизофренія",
+      "Реактивний психоз",
+      "Епілепсія",
+      "Психастенія"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "До пропріоцептивних відчуттів відносяться:",
+    "options": [
+      "Почуття рівноваги",
+      "Зір",
+      "Слух",
+      "Відчуття \"схеми тіла\""
+    ],
+    "correct_index": 0
+  },
+  {
+    "question": "До інтероцептивних відчуттів відносяться:",
+    "options": [
+      "Дотик",
+      "Почуття рівноваги",
+      "Почуття голоду",
+      "Почуття комфорту"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Які з перерахованих нижче галюцинацій супроводжуються баченням власного образу?",
+    "options": [
+      "Кінематографічні",
+      "Геміаноптичні",
+      "Екстракампінні",
+      "Аутоскопічні"
+    ],
+    "correct_index": 3
+  },
+  {
+    "question": "Псевдогалюцинації спостерігаються частіше при:",
+    "options": [
+      "Інтоксикаційних психозах",
+      "Алкогольних психозах",
+      "Шизофренії",
+      "Інволюційних психозах"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Оберіть, який з наведених нижче прикладів описує тактильні галюцинації:",
+    "options": [
+      "Печія по всьому тілу",
+      "Крутіння\" у шлунку",
+      "Тиск\" у м'язах і шкірі",
+      "\"Пронизування\" струмом"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Кінематографічні галюцинації частіше зустрічаються при:",
+    "options": [
+      "Реактивних психозах",
+      "Ревматичних психозах",
+      "Алкогольних психозах",
+      "Шизофренії"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Виберіть, з наведених нижче прикладів, опис ентероцептивних (вісцеральних) галюцинацій:",
+    "options": [
+      "Обтяжливі, болісні відчуття в різних частинах тіла",
+      "Відчуття \"схоплювання\", різкого дотику",
+      "Відчуття тиску у м'язах і шкірі",
+      "Відчуття наявності чужорідних предметів, живих істот у внутрішніх органах"
+    ],
+    "correct_index": 3
+  },
+  {
+    "question": "Вкажіть назву розладів сприйняття, що відповідають визначенню \"помилкове відчуття неврівноваженості, що виникає в зоровий і кінестетичній сферах\":",
+    "options": [
+      "Кінестетичні галюцинації",
+      "Вісцеральні галюцинації",
+      "Ендоскопічні галюцинації",
+      "Вестибюлярні галюцинації"
+    ],
+    "correct_index": 3
+  },
+  {
+    "question": "Характер \"зробленості\", штучності найбільш характерний для:",
+    "options": [
+      "Псевдогалюцинацій",
+      "Істинних слухових галюцинацій",
+      "Істинних зорових галюцинацій",
+      "Функціональних галюцинацій"
+    ],
+    "correct_index": 0
+  },
+  {
+    "question": "Функціональні галюцинації виникають за умов:",
+    "options": [
+      "Наявності галюцинацій в одній з сфер відчуттів",
+      "Наявності реального подразника в однієї зі сфер відчуттів",
+      "Наявності ілюзорного сприймання навколишнього середовища",
+      "Наявності у хворого виражених тривожно-депресивних розладів"
+    ],
+    "correct_index": 1
+  },
+  {
+    "question": "Виокремте визначення рефлекторних галюцинацій:",
+    "options": [
+      "Галюцинації, що виникають за наявності реального подразника в одній зі сфер відчуттів",
+      "Галюцинації, що виникають за наявності галюцинаторного образу в тієї ж сфері почуттів",
+      "Галюцинації, що виникають в сфері одного аналізатору при дії реального"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "До клінічних феноменів, які є типовими для 4-ої фази сну, включають:",
+    "options": [
+      "Сомнамбулізм",
+      "Різке падіння м'язового тонусу",
+      "Енурез",
+      "Синдром \"неспокійних ніг\""
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "Астенічний синдром характеризується всім Перерахованим, окрім:",
+    "options": [
+      "Фізичної виснажливості",
+      "Психічної виснажливості",
+      "Фіксаційної амнезії",
+      "Афективної лабільності"
+    ],
+    "correct_index": 2
+  },
+  {
+    "question": "До складних варіантів депресивного синдрому відносять всі перераховані, окрім:",
+    "options": [
+      "Іпохондричної депресії",
+      "Депресії з інтерпретативним маяченням",
+      "Депресії з маяченням збитків",
+      "Депресії з маяченням самозвинувачення"
+    ],
+    "correct_index": 3
+  },
+  {
+    "question": "До нав'язливих ритуалів відносяться всі перераховані, крім:",
+    "options": [
+      "Нав'язливих рухів і дій, що виникають спільно з іншими образними нав'язливостями",
+      "Дії, що здійснюються під впливом \"чужої волі\"",
+      "Дій, що мають \"захисний\" зміст, \"закляття\"",
+      "Нав'язливих дій, що виконуються в чітко визначеному, певному порядку"
+    ],
+    "correct_index": 1
+  },
+  {
+    "question": "Дереалізація характеризується всім перерахованим, окрім:",
+    "options": [
+      "Викривлення величини і форми власного тіла",
+      "Почуття примарності навколишнього",
+      "Сприймання зовнішнього світу невиразним",
+      "Симптому \"ніколи не баченого\""
+    ],
+    "correct_index": 0
+  },
+  {
+    "question": "Сенестопатії характеризуються всім перерахованим, окрім:",
+    "options": [
+      "Різноманітних, вкрай болісних, обтяжливих відчуттів у різних частинах тіла",
+      "Незвичайності, примхливості відчуттів",
+      "Відсутності констатованих соматичними методами дослідження причин",
+      "Відчуття викривлення форми і розмірів свого тіла"
+    ],
+    "correct_index": 3
+  },
+  {
+    "question": "Невротичний іпохондричний синдром характеризується всім перерахованим, окрім:",
+    "options": [
+      "Ейфорії",
+      "Надмірно підкресленої уваги до свого здоров'я",
+      "Впевненості в існуванні захворювання",
+      "Пригніченого настрою з думками про хворобу"
+    ],
+    "correct_index": 0
+  },
+  {
+    "question": "Істеричні сутінкові стани характеризуються всім перерахованим, окрім:",
+    "options": [
+      "Збереження в пам'яті всіх подій які відбувались під час стану зміненої свідомості",
+      "Розлади свідомості з напливом яскравих галюцинацій, що повністю замінюють наявну дійсність",
+      "Надзвичайно виразної, театральної поведінки",
+      "Звучання психотравмуючої ситуації"
+    ],
+    "correct_index": 0
+  },
+  {
+    "question": "Індуковані маячні ідеї:",
+    "options": [
+      "Не завжди залежать від тісних емоційних зв'язків між індуктором та індукованим",
+      "Мають сприятливий прогноз коли зустрічаються у літніх людей",
+      "Зазвичай виникають у людей з високим інтелектуальним рівнем",
+      "Вимагають лікування в умовах відокремлення від індуктора"
+    ],
+    "correct_index": 3
+  }
+];
+
+    // 🔹 Перемешиваем вопросы
+    function shuffleArray(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+    }
+
+    shuffleArray(questions);
+
+    let currentQuestionIndex = 0;
+    const userAnswers = {};
+    let buttonsDisabled = false;
+    let timeoutId = null;
+
+    function showQuestion() {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+
+      buttonsDisabled = false;
+
+      if (currentQuestionIndex >= questions.length) {
+        showResults();
+        return;
+      }
+
+      const questionData = questions[currentQuestionIndex];
+      const appDiv = document.getElementById('app');
+      appDiv.innerHTML = '';
+
+      const questionElement = document.createElement('div');
+      questionElement.className = 'question';
+      questionElement.textContent = questionData.question;
+      appDiv.appendChild(questionElement);
+
+      // 🔹 Перемешиваем варианты ответа для текущего вопроса
+      const optionItems = questionData.options.map((opt, idx) => ({ text: opt, index: idx }));
+      shuffleArray(optionItems);
+
+      const answersDiv = document.createElement('div');
+      answersDiv.className = 'answers';
+
+      optionItems.forEach(optionObj => {
+        const button = document.createElement('button');
+        button.textContent = optionObj.text;
+
+        // При возвращении назад подсветка
+        if (userAnswers[currentQuestionIndex] === optionObj.index) {
+          button.classList.add('selected');
+          const correctText = questionData.options[questionData.correct_index];
+          if (optionObj.index === questionData.correct_index) {
+            button.classList.add('correct');
+          } else {
+            button.classList.add('wrong');
+            setTimeout(() => {
+              const allButtons = answersDiv.querySelectorAll('button');
+              allButtons.forEach(btn => {
+                if (btn.textContent === correctText) {
+                  btn.classList.add('correct');
+                }
+              });
+            }, 0);
+          }
+          button.disabled = true;
+        }
+
+        button.onclick = () => {
+          if (buttonsDisabled) return;
+
+          userAnswers[currentQuestionIndex] = optionObj.index;
+          buttonsDisabled = true;
+
+          const buttons = answersDiv.querySelectorAll('button');
+          buttons.forEach(btn => {
+            btn.disabled = true;
+            const btnText = btn.textContent;
+            const correctText = questionData.options[questionData.correct_index];
+            if (btnText === correctText) {
+              btn.classList.add('correct');
+            }
+            if (btnText === optionObj.text && optionObj.index !== questionData.correct_index) {
+              btn.classList.add('wrong');
+            }
+          });
+
+          timeoutId = setTimeout(() => {
+            currentQuestionIndex++;
+            showQuestion();
+          }, 2000);
+        };
+
+        answersDiv.appendChild(button);
+      });
+
+      appDiv.appendChild(answersDiv);
+
+      updateStats(appDiv);
+
+      const navDiv = document.createElement('div');
+      navDiv.className = 'navigation';
+
+      const backBtn = document.createElement('button');
+      backBtn.textContent = 'Назад';
+      backBtn.disabled = currentQuestionIndex === 0 || buttonsDisabled;
+      backBtn.onclick = () => {
+        if (currentQuestionIndex > 0 && !buttonsDisabled) {
+          currentQuestionIndex--;
+          showQuestion();
+        }
+      };
+      navDiv.appendChild(backBtn);
+
+      if (currentQuestionIndex < questions.length - 1 && !buttonsDisabled) {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Вперед';
+        nextBtn.onclick = () => {
+          currentQuestionIndex++;
+          showQuestion();
+        };
+        navDiv.appendChild(nextBtn);
+      }
+
+      appDiv.appendChild(navDiv);
+    }
+
+    function updateStats(appDiv) {
+      let correctCount = 0;
+      let incorrectCount = 0;
+      const totalAnswered = Object.keys(userAnswers).length;
+
+      for (const [qIndex, ansIndex] of Object.entries(userAnswers)) {
+        const q = questions[qIndex];
+        if (ansIndex == q.correct_index) {
+          correctCount++;
+        } else {
+          incorrectCount++;
+        }
+      }
+
+      const correctPercent = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+
+      const statsDiv = document.createElement('div');
+      statsDiv.className = 'stats';
+      statsDiv.innerHTML = `
+        Відповідей: ${totalAnswered} / ${questions.length} | 
+        Правильних: ${correctCount} (${correctPercent}%) | 
+        Помилок: ${incorrectCount}
+      `;
+      appDiv.appendChild(statsDiv);
+    }
+
+    function showResults() {
+      const appDiv = document.getElementById('app');
+      appDiv.innerHTML = '';
+
+      const resultsHeading = document.createElement('h2');
+      resultsHeading.textContent = 'Результати тестування';
+      appDiv.appendChild(resultsHeading);
+
+      const totalAnswered = Object.keys(userAnswers).length;
+      let correctCount = 0;
+      let incorrectCount = 0;
+      const incorrectQuestions = [];
+
+      for (const [qIndex, ansIndex] of Object.entries(userAnswers)) {
+        const q = questions[qIndex];
+        if (ansIndex == q.correct_index) {
+          correctCount++;
+        
+      setTimeout(() => {
+        document.body.innerHTML = `<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;
+        display:flex;justify-content:center;align-items:center;
+        font-size:3vw;background-color:rgba(0,0,0,0.95);color:white;z-index:9999;text-align:center;">
+          Ну ти легенда, може нахуй ті тести, іди спати вже, заїбав
+        </div>`;
+
+        const fireworks = new Fireworks.default(document.body, {
+          autoresize: true,
+          opacity: 0.9,
+          acceleration: 1.05,
+          friction: 0.97,
+          gravity: 1.5,
+          particles: 100,
+          trace: 3,
+          explosion: 5,
+        });
+        fireworks.start();
+      }, 2000);
+} else {
+          incorrectCount++;
+          incorrectQuestions.push(q);
+        }
+      }
+
+      const correctPercent = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
+
+      const scoreParagraph = document.createElement('p');
+      scoreParagraph.innerHTML = `
+        Відповідей: ${totalAnswered} з ${questions.length}<br>
+        Правильних відповідей: ${correctCount} (${correctPercent}%)<br>
+        Помилок: ${incorrectCount}
+      `;
+      appDiv.appendChild(scoreParagraph);
+
+     setTimeout(() => {
+  document.body.innerHTML = `<div style="position:fixed;top:0;left:0;width:100vw;height:100vh;
+  display:flex;justify-content:center;align-items:center;
+  font-size:3vw;background-color:rgba(0,0,0,0.95);color:white;z-index:9999;text-align:center;">
+    Ну ти легенда, може нахуй ті тести, іди спати вже, заїбав
+  </div>`;
+
+  const fireworks = new Fireworks.default(document.body, {
+    autoresize: true,
+    opacity: 0.9,
+    acceleration: 1.05,
+    friction: 0.97,
+    gravity: 1.5,
+    particles: 100,
+    trace: 3,
+    explosion: 5,
+  });
+  fireworks.start();
+}, 2000);
+
+      const restartBtn = document.createElement('button');
+      restartBtn.textContent = 'Пройти тест заново';
+      restartBtn.style.marginTop = '20px';
+      restartBtn.onclick = () => {
+        currentQuestionIndex = 0;
+        for (const key in userAnswers) delete userAnswers[key];
+        shuffleArray(questions); // Перемешиваем снова
+        showQuestion();
+      };
+      appDiv.appendChild(restartBtn);
+    }
+
+    showQuestion();
+  </script>
+
+<!-- Fireworks Script -->
+<script src="https://cdn.jsdelivr.net/npm/fireworks-js@2.x/dist/index.umd.min.js"></script>
+
+</body>
+</html>
